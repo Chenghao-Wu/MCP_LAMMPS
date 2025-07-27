@@ -1,0 +1,117 @@
+# MCP LAMMPS Server
+
+A Model Context Protocol (MCP) server that enables AI assistants to interact with LAMMPS (Large-scale Atomic/Molecular Massively Parallel Simulator) for molecular dynamics simulations.
+
+## Status
+
+This is still in experimental status. This package is developed in collaboration with AI coder.
+
+## Overview
+
+This MCP is part of our workflow for the autonomous computational materials design with LLM. This MCP server provides a standardized interface for controlling LAMMPS molecular dynamics simulations through natural language commands. It enables AI assistants to:
+
+- Set up and configure molecular dynamics simulations
+- Run equilibration and production simulations
+- Monitor simulation progress in real-time
+- Analyze simulation results
+- Manage simulation workflows
+
+## Features
+
+### Core Capabilities
+- **Simulation Management**: Create, configure, and run LAMMPS simulations
+- **Structure Handling**: Load molecular structures from various formats
+- **Real-time Monitoring**: Track simulation progress and system properties
+- **Analysis Tools**: Process trajectories and calculate thermodynamic properties
+- **Workflow Automation**: Define and execute multi-step simulation workflows
+
+## Installation
+
+### Prerequisites
+- Python 3.9 or higher
+- LAMMPS with Python interface
+
+### Quick Start
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/mcp-lammps/mcp-lammps.git
+   cd mcp-lammps
+   ```
+
+2. **Create a virtual environment**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Install in development mode**:
+   ```bash
+   pip install -e .
+   ```
+
+## Usage
+
+### Basic Usage
+
+Start the MCP server:
+
+```bash
+python -m mcp_lammps.server
+```
+
+### Configuration
+
+The server can be configured through environment variables or configuration files:
+
+```bash
+export MCP_LAMMPS_LOG_LEVEL=INFO
+export MCP_LAMMPS_WORK_DIR=/path/to/workspace
+python -m mcp_lammps.server
+```
+
+### Example Prompt
+
+``create a water simulation with 10 water molecules, save the relevant files, run the simulation at 300 K under NVT ensemble in the selected folder (examples)''
+
+## Development
+
+### Project Structure
+```
+mcp_lammps/
+├── src/mcp_lammps/
+│   ├── server.py              # Main MCP server
+│   ├── lammps_interface.py    # LAMMPS wrapper
+│   ├── simulation_manager.py  # Simulation management
+│   ├── data_handler.py        # Data processing
+│   ├── tools/                 # MCP tools
+│   └── utils/                 # Utilities
+├── tests/                     # Test suite
+├── examples/                  # Usage examples
+└── docs/                      # Documentation
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
+
+## License
+
+This project is licensed under the Apache License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- LAMMPS development team for the molecular dynamics engine
+- Model Context Protocol community for the MCP framework
+- Scientific computing community for inspiration and feedback
+- LLM for writing the code

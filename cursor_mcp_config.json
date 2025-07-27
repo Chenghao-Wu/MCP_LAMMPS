@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "lammps": {
+      "command": "python",
+      "args": ["-m", "mcp_lammps.server"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "cwd": "${workspaceFolder}"
+    }
+  }
+} 

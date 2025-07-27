@@ -1,0 +1,209 @@
+Metadata-Version: 2.4
+Name: mcp-lammps
+Version: 0.1.0
+Summary: Model Context Protocol server for LAMMPS molecular dynamics simulations
+Author-email: MCP LAMMPS Development Team <dev@mcp-lammps.org>
+License: MIT
+Project-URL: Homepage, https://github.com/mcp-lammps/mcp-lammps
+Project-URL: Repository, https://github.com/mcp-lammps/mcp-lammps.git
+Project-URL: Documentation, https://mcp-lammps.readthedocs.io/
+Project-URL: Bug Tracker, https://github.com/mcp-lammps/mcp-lammps/issues
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Scientific/Engineering :: Chemistry
+Classifier: Topic :: Scientific/Engineering :: Physics
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: mcp>=1.0.0
+Requires-Dist: lammps>=2023.0.0
+Requires-Dist: numpy>=1.21.0
+Requires-Dist: scipy>=1.7.0
+Requires-Dist: pandas>=1.3.0
+Requires-Dist: matplotlib>=3.5.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: pathlib2>=2.3.0
+Requires-Dist: asyncio-mqtt>=0.11.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
+Requires-Dist: black>=22.0.0; extra == "dev"
+Requires-Dist: flake8>=5.0.0; extra == "dev"
+Requires-Dist: mypy>=1.0.0; extra == "dev"
+Provides-Extra: gpu
+Requires-Dist: cupy>=11.0.0; extra == "gpu"
+
+# MCP LAMMPS Server
+
+A Model Context Protocol (MCP) server that enables AI assistants to interact with LAMMPS (Large-scale Atomic/Molecular Massively Parallel Simulator) for molecular dynamics simulations.
+
+## Overview
+
+This MCP server provides a standardized interface for controlling LAMMPS molecular dynamics simulations through natural language commands. It enables AI assistants to:
+
+- Set up and configure molecular dynamics simulations
+- Run equilibration and production simulations
+- Monitor simulation progress in real-time
+- Analyze simulation results
+- Manage simulation workflows
+
+## Features
+
+### Core Capabilities
+- **Simulation Management**: Create, configure, and run LAMMPS simulations
+- **Structure Handling**: Load molecular structures from various formats
+- **Real-time Monitoring**: Track simulation progress and system properties
+- **Analysis Tools**: Process trajectories and calculate thermodynamic properties
+- **Workflow Automation**: Define and execute multi-step simulation workflows
+
+### Supported Operations
+- Energy minimization
+- NVT and NPT ensemble simulations
+- Equilibration and production runs
+- Trajectory analysis
+- Property calculations
+- Data export and visualization
+
+## Installation
+
+### Prerequisites
+- Python 3.9 or higher
+- LAMMPS with Python interface
+- Sufficient RAM for molecular dynamics simulations
+
+### Quick Start
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/mcp-lammps/mcp-lammps.git
+   cd mcp-lammps
+   ```
+
+2. **Create a virtual environment**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Install in development mode**:
+   ```bash
+   pip install -e .
+   ```
+
+## Usage
+
+### Basic Usage
+
+Start the MCP server:
+
+```bash
+python -m mcp_lammps.server
+```
+
+### Configuration
+
+The server can be configured through environment variables or configuration files:
+
+```bash
+export MCP_LAMMPS_LOG_LEVEL=INFO
+export MCP_LAMMPS_WORK_DIR=/path/to/workspace
+python -m mcp_lammps.server
+```
+
+### Example Workflow
+
+1. **Create a simulation**:
+   ```python
+   # Create a new simulation
+   result = await server.create_simulation(
+       name="water_simulation",
+       structure_file="water.xyz",
+       force_field="TIP3P"
+   )
+   ```
+
+2. **Run equilibration**:
+   ```python
+   # Run equilibration
+   result = await server.run_equilibration(
+       simulation_id="water_simulation",
+       temperature=300,
+       duration=1000
+   )
+   ```
+
+3. **Monitor progress**:
+   ```python
+   # Check simulation status
+   status = await server.get_simulation_status("water_simulation")
+   ```
+
+## Development
+
+### Project Structure
+```
+mcp_lammps/
+├── src/mcp_lammps/
+│   ├── server.py              # Main MCP server
+│   ├── lammps_interface.py    # LAMMPS wrapper
+│   ├── simulation_manager.py  # Simulation management
+│   ├── data_handler.py        # Data processing
+│   ├── tools/                 # MCP tools
+│   └── utils/                 # Utilities
+├── tests/                     # Test suite
+├── examples/                  # Usage examples
+└── docs/                      # Documentation
+```
+
+### Running Tests
+```bash
+pytest tests/
+```
+
+### Code Formatting
+```bash
+black src/ tests/
+flake8 src/ tests/
+mypy src/
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- LAMMPS development team for the molecular dynamics engine
+- Model Context Protocol community for the MCP framework
+- Scientific computing community for inspiration and feedback
+- LLM for writing the code
+
+## Support
+
+For questions, issues, or contributions, please:
+- Open an issue on GitHub
+- Check the documentation in the `docs/` directory
+- Review the development plan in `dev.md`
+
+## Roadmap
+
+See `dev.md` for the detailed development plan and roadmap. 
