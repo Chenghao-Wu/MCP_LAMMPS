@@ -82,14 +82,18 @@ class LAMMPSServer:
         from .tools.control_tools import register_control_tools
         from .tools.analysis_tools import register_analysis_tools
         from .tools.monitoring_tools import register_monitoring_tools
+        from .tools.organic_tools import register_organic_tools
+        from .tools.property_tools import register_property_tools
         
         # Register tools from each module
         register_setup_tools(self.server, self)
         register_control_tools(self.server, self)
         register_analysis_tools(self.server, self)
         register_monitoring_tools(self.server, self)
+        register_organic_tools(self.server, self)
+        register_property_tools(self.server, self)
         
-        logger.info("All tools registered successfully")
+        logger.info("All tools registered successfully (including organic and property tools)")
     
     async def health_check(self, ctx: Context) -> Dict[str, Any]:
         """

@@ -12,6 +12,14 @@ pandas>=1.3.0
 # Visualization
 matplotlib>=3.5.0
 
+# Molecular chemistry and force field tools
+rdkit>=2023.3.1
+
+# Optional dependencies (enhance functionality but not required for core features)
+MDAnalysis>=2.4.0  # Advanced trajectory analysis and molecular dynamics
+# openbabel>=3.1.1  # Alternative molecular format conversion (requires system Open Babel libraries)
+# pytraj>=2.0.5  # Additional trajectory analysis (requires cpptraj, complex installation)
+
 # Data validation and serialization
 pydantic>=2.0.0
 

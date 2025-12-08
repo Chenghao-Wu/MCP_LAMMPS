@@ -115,4 +115,6 @@ addopts = [
     "--strict-config",
     "--verbose",
 ]
-asyncio_mode = "auto" 
+markers = [
+    "asyncio: marks tests as async",
+] 
