@@ -1085,22 +1085,26 @@ Atoms
             
             # Calculate total charge for validation
             total_charge = 0.0
-            molecule_charge_info = []
-            
+            molecule_info = []
+
             for mol_info in processed_molecules:
                 mol_charges = mol_info['charges']
                 mol_total_charge = sum(mol_charges.values()) * mol_info['count']
                 total_charge += mol_total_charge
-                
-                molecule_charge_info.append({
+
+                molecule_info.append({
                     'name': mol_info['name'],
                     'smiles': mol_info['smiles'],
                     'count': mol_info['count'],
+                    'mass': mol_info['mass'],
+                    'atom_types': mol_info['atom_types'],
+                    'topology': mol_info['topology'],
+                    'charges': mol_info['charges'],
                     'charge_per_molecule': sum(mol_charges.values()),
                     'total_charge_contribution': mol_total_charge,
                     'num_atoms_per_molecule': len(mol_charges)
                 })
-            
+
             # Save metadata
             metadata = {
                 "molecules": molecules,
@@ -1109,9 +1113,10 @@ Atoms
                 "total_atoms": total_atoms,
                 "total_molecules": total_molecules,
                 "box_type": box_type,
+                "molecule_details": molecule_info,
                 "charge_information": {
                     "total_system_charge": total_charge,
-                    "molecule_charges": molecule_charge_info,
+                    "molecule_charges": molecule_info,  # Keep for backward compatibility
                     "charge_method": "gasteiger"
                 }
             }

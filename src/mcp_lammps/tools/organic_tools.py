@@ -254,7 +254,29 @@ def register_organic_tools(server: Any, lammps_server: Any) -> None:
                 molecules=molecules,
                 target_density=target_density
             )
-            
+
+            # Load metadata from liquid box file to extract topology information
+            metadata_file = box_file.with_suffix(".json")
+            atom_types = None
+            topology = None
+
+            if metadata_file.exists():
+                import json
+                try:
+                    with open(metadata_file, 'r') as f:
+                        metadata = json.load(f)
+
+                    # Extract atom types and topology from the first molecule (assuming single component for now)
+                    if "molecule_details" in metadata and metadata["molecule_details"]:
+                        mol_detail = metadata["molecule_details"][0]  # Use first molecule for single component
+                        atom_types = mol_detail.get("atom_types")
+                        topology = mol_detail.get("topology")
+
+                        ctx.info(f"Extracted topology from metadata: {len(topology.get('bonds', []))} bonds, "
+                                f"{len(topology.get('angles', []))} angles, {len(topology.get('dihedrals', []))} dihedrals")
+                except Exception as e:
+                    logger.warning(f"Failed to load metadata from {metadata_file}: {e}")
+
             # Create simulation configuration
             config = {
                 "name": name,
@@ -269,11 +291,11 @@ def register_organic_tools(server: Any, lammps_server: Any) -> None:
                 "production_steps": production_steps,
                 "structure_file": str(box_file)
             }
-            
+
             # Create simulation in manager
             simulation_id = lammps_server.simulation_manager.create_simulation(name, config)
-            
-            # Create LAMMPS script for liquid simulation
+
+            # Create LAMMPS script for liquid simulation with topology information
             script_content = lammps_server.lammps_interface.create_liquid_script(
                 structure_file=str(box_file),
                 force_field=force_field,
@@ -282,7 +304,9 @@ def register_organic_tools(server: Any, lammps_server: Any) -> None:
                 timestep=timestep,
                 equilibration_steps=equilibration_steps,
                 production_steps=production_steps,
-                density_target=target_density
+                density_target=target_density,
+                atom_types=atom_types,
+                topology=topology
             )
             
             # Save script file
