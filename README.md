@@ -7,6 +7,8 @@ A Model Context Protocol (MCP) server that enables AI assistants to interact wit
 This is still in experimental status. This package is developed in collaboration with AI coder.
 
 ### Update 06.12.2025
+Note: all tests are performed with Sonnet 4.5
+
 Add support for organic liquids simulations with gaff
 
 simple test prompt:
