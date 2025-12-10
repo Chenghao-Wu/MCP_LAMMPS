@@ -502,7 +502,8 @@ undump          1
         production_steps: int = 50000,
         density_target: Optional[float] = None,
         atom_types: Optional[Dict[int, str]] = None,
-        topology: Optional[Dict[str, Any]] = None
+        topology: Optional[Dict[str, Any]] = None,
+        validate_consistency: bool = True
     ) -> str:
         """
         Create a LAMMPS script optimized for liquid-phase simulations.
@@ -518,6 +519,7 @@ undump          1
             density_target: Target density for equilibration (g/cm³)
             atom_types: Dictionary mapping atom indices to GAFF atom types
             topology: Molecular topology information
+            validate_consistency: Whether to validate type consistency between data file and script
 
         Returns:
             LAMMPS script content
@@ -626,6 +628,30 @@ unfix           5
 unfix           6
 undump          1
 """
+        
+        # Validate type consistency if requested
+        if validate_consistency and FORCEFIELD_AVAILABLE:
+            try:
+                from pathlib import Path
+                data_file_path = Path(structure_file)
+                is_consistent, issues = forcefield_utils.validate_type_consistency(
+                    data_file_path, script, None
+                )
+                if not is_consistent:
+                    logger.warning(f"Type consistency issues detected: {issues}")
+                    # Add validation results as comments to the script
+                    script += f"\n# Type consistency validation: {'PASSED' if is_consistent else 'FAILED'}\n"
+                    if issues:
+                        script += "# Issues found:\n"
+                        for issue in issues:
+                            script += f"# - {issue}\n"
+                else:
+                    logger.info("Type consistency validation passed")
+                    script += "\n# Type consistency validation: PASSED\n"
+            except Exception as e:
+                logger.warning(f"Type consistency validation failed: {e}")
+                script += f"\n# Type consistency validation: ERROR - {e}\n"
+        
         return script
     
     def setup_property_computes(self, lmp: Any) -> None:
@@ -816,6 +842,9 @@ undump          1
                 if extracted_params:
                     atom_types = extracted_params.get("atom_types")
                     topology = extracted_params.get("topology")
+                    # Use unified topology mapping for consistency
+                    if topology:
+                        topology_types = forcefield_utils.create_unified_topology_mapping(topology)
                     logger.info(f"Extracted parameters from structure file: {structure_file}")
             except Exception as e:
                 logger.warning(f"Could not extract parameters from structure file {structure_file}: {e}")
@@ -838,10 +867,12 @@ undump          1
         elif force_field_type.lower() in ["gaff", "amber"]:
             # Comprehensive GAFF/AMBER parameters using new system
             if atom_types and topology:
-                parameters.extend(self._generate_gaff_parameters(atom_types, topology))
+                # Use unified topology type mappings for consistent bond/angle/dihedral types
+                if 'topology_types' not in locals():
+                    topology_types = forcefield_utils.create_unified_topology_mapping(topology)
+                parameters.extend(self._generate_gaff_parameters(atom_types, topology, topology_types))
             else:
-                # Import the new forcefield utilities
-                from .utils.forcefield_utils import forcefield_utils
+                # Use module-level forcefield_utils (already imported)
                 ff_settings = forcefield_utils.get_force_field_settings()
                 parameters.extend([
                     "# Comprehensive GAFF/AMBER force field parameters",
@@ -926,40 +957,102 @@ undump          1
     def _extract_from_lammps_data_file(self, data_file: Path) -> Optional[Dict[str, Any]]:
         """
         Extract atom types and topology from a LAMMPS data file.
-        
+
         Args:
             data_file: Path to LAMMPS data file
-            
+
         Returns:
             Dictionary with atom_types and topology information
         """
         try:
             if not data_file.exists():
                 return None
-            
+
             with open(data_file, 'r') as f:
                 content = f.read()
-            
+
             # Parse LAMMPS data file to extract atom types and topology
             lines = content.split('\n')
-            
+
             # Look for atom type information in comments or masses section
             atom_types = {}
             topology = {"bonds": [], "angles": [], "dihedrals": []}
-            
+
             # This is a simplified parser - in practice, you'd need more robust parsing
             # For now, we'll return None to indicate we couldn't extract parameters
             logger.info("LAMMPS data file parameter extraction not fully implemented")
             return None
-            
+
         except Exception as e:
             logger.warning(f"Error parsing LAMMPS data file: {e}")
             return None
+
+    def _get_unique_topology_types(self, topology: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get unique bond, angle, and dihedral types from topology.
+
+        Args:
+            topology: Topology information with bonds, angles, dihedrals
+
+        Returns:
+            Dictionary containing unique types and their mappings
+        """
+        try:
+            # Collect all unique bond types
+            all_bond_types = set()
+            all_angle_types = set()
+            all_dihedral_types = set()
+
+            # Collect bond types
+            for bond_info in topology.get("bonds", []):
+                bond_type = tuple(sorted(bond_info.get("types", [])))
+                all_bond_types.add(bond_type)
+
+            # Collect angle types
+            for angle_info in topology.get("angles", []):
+                angle_type = tuple(angle_info.get("types", []))
+                all_angle_types.add(angle_type)
+
+            # Collect dihedral types
+            for dihedral_info in topology.get("dihedrals", []):
+                dihedral_type = tuple(dihedral_info.get("types", []))
+                all_dihedral_types.add(dihedral_type)
+
+            # Create type mappings (sorted for deterministic ordering)
+            unique_bond_types = sorted(list(all_bond_types))
+            unique_angle_types = sorted(list(all_angle_types))
+            unique_dihedral_types = sorted(list(all_dihedral_types))
+
+            # Create mappings with STRING KEYS (not tuples) for JSON compatibility
+            bond_type_mapping = {"-".join(bond_type): i+1 for i, bond_type in enumerate(unique_bond_types)}
+            angle_type_mapping = {"-".join(angle_type): i+1 for i, angle_type in enumerate(unique_angle_types)}
+            dihedral_type_mapping = {"-".join(dihedral_type): i+1 for i, dihedral_type in enumerate(unique_dihedral_types)}
+
+            return {
+                "unique_bond_types": [list(bt) for bt in unique_bond_types],  # Convert tuples to lists for JSON
+                "unique_angle_types": [list(at) for at in unique_angle_types],
+                "unique_dihedral_types": [list(dt) for dt in unique_dihedral_types],
+                "bond_type_mapping": bond_type_mapping,
+                "angle_type_mapping": angle_type_mapping,
+                "dihedral_type_mapping": dihedral_type_mapping
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting unique topology types: {e}")
+            return {
+                "unique_bond_types": [],
+                "unique_angle_types": [],
+                "unique_dihedral_types": [],
+                "bond_type_mapping": {},
+                "angle_type_mapping": {},
+                "dihedral_type_mapping": {}
+            }
     
     def _generate_gaff_parameters(
         self,
         atom_types: Dict[int, str],
-        topology: Dict[str, Any]
+        topology: Dict[str, Any],
+        topology_types: Optional[Dict[str, Any]] = None
     ) -> List[str]:
         """
         Generate comprehensive GAFF force field parameters from atom types and topology.
@@ -967,6 +1060,7 @@ undump          1
         Args:
             atom_types: Dictionary mapping atom indices to GAFF atom types
             topology: Topology information with bonds, angles, dihedrals
+            topology_types: Optional pre-computed topology type mappings for consistency
             
         Returns:
             List of parameter strings
@@ -981,11 +1075,17 @@ undump          1
                 parameters.append(f"# {setting} {value}")
         
         # Generate pair coefficients from comprehensive VdW parameters
-        unique_types = set(atom_types.values())
-        type_mapping = {atype: i+1 for i, atype in enumerate(sorted(unique_types))}
+        # Sort unique types for deterministic ordering
+        unique_types = sorted(set(atom_types.values()))
+        type_mapping = {atype: i+1 for i, atype in enumerate(unique_types)}
+        
+        # Use unified topology mapping if provided, otherwise create it
+        if topology_types is None:
+            topology_types = forcefield_utils.create_unified_topology_mapping(topology)
+            logger.info("Created unified topology mapping for script generation")
         
         parameters.append("\n# Pair coefficients (Lennard-Jones parameters)")
-        for atype in sorted(unique_types):
+        for atype in unique_types:
             type_id = type_mapping[atype]
             pair_params = forcefield_utils.get_pair_parameters(atype)
             
@@ -1003,13 +1103,16 @@ undump          1
         if "bonds" in topology and topology["bonds"]:
             parameters.append("\n# Bond coefficients")
             bond_type_map = {}
-            bond_id = 1
+            bond_type_mapping = topology_types.get('bond_type_mapping', {})
             
             for bond in topology["bonds"]:
                 bond_types = bond.get("types", [])
-                if len(bond_types) == 2:
-                    bond_key = tuple(sorted(bond_types))
-                    if bond_key not in bond_type_map:
+                if len(bond_types) >= 2:
+                    # Use consistent bond type key generation (sorted for bonds, then joined as string)
+                    bond_type_key = "-".join(sorted(bond_types[:2]))
+                    bond_id = bond_type_mapping.get(bond_type_key, 1)
+                    
+                    if bond_type_key not in bond_type_map:
                         bond_params = forcefield_utils.get_bond_parameters(bond_types[0], bond_types[1])
                         
                         if bond_params:
@@ -1017,26 +1120,29 @@ undump          1
                             r0 = bond_params["r0"]
                             style = bond_params.get("style", "harmonic")
                             comment = bond_params.get("comment", "")
-                            parameters.append(f"bond_coeff      {bond_id} {style} {k:.1f} {r0:.4f}    # {'-'.join(bond_key)} {comment}")
+                            parameters.append(f"bond_coeff      {bond_id} {style} {k:.1f} {r0:.4f}    # {bond_type_key} {comment}")
                         else:
                             # Fallback parameters
-                            logger.warning(f"No bond parameters found for: {'-'.join(bond_key)}")
-                            parameters.append(f"bond_coeff      {bond_id} harmonic 300.0 1.500    # {'-'.join(bond_key)} (fallback)")
+                            logger.warning(f"No bond parameters found for: {bond_type_key}")
+                            parameters.append(f"bond_coeff      {bond_id} harmonic 300.0 1.500    # {bond_type_key} (fallback)")
                         
-                        bond_type_map[bond_key] = bond_id
-                        bond_id += 1
+                        bond_type_map[bond_type_key] = bond_id
+                        
         
         # Generate angle coefficients using comprehensive database
         if "angles" in topology and topology["angles"]:
             parameters.append("\n# Angle coefficients")
             angle_type_map = {}
-            angle_id = 1
+            angle_type_mapping = topology_types.get('angle_type_mapping', {})
             
             for angle in topology["angles"]:
                 angle_types = angle.get("types", [])
-                if len(angle_types) == 3:
-                    angle_key = tuple(angle_types)
-                    if angle_key not in angle_type_map:
+                if len(angle_types) >= 3:
+                    # Use consistent angle type key generation (maintain order for angles, then join as string)
+                    angle_type_key = "-".join(angle_types[:3])
+                    angle_id = angle_type_mapping.get(angle_type_key, 1)
+                    
+                    if angle_type_key not in angle_type_map:
                         angle_params = forcefield_utils.get_angle_parameters(angle_types[0], angle_types[1], angle_types[2])
                         
                         if angle_params:
@@ -1044,27 +1150,32 @@ undump          1
                             theta0 = angle_params["theta0"]
                             style = angle_params.get("style", "harmonic")
                             comment = angle_params.get("comment", "")
-                            parameters.append(f"angle_coeff     {angle_id} {style} {k:.2f} {theta0:.2f}    # {'-'.join(angle_key)} {comment}")
+                            parameters.append(f"angle_coeff     {angle_id} {style} {k:.2f} {theta0:.2f}    # {angle_type_key} {comment}")
                         else:
                             # Fallback parameters
-                            logger.warning(f"No angle parameters found for: {'-'.join(angle_key)}")
-                            parameters.append(f"angle_coeff     {angle_id} harmonic 50.0 109.5    # {'-'.join(angle_key)} (fallback)")
+                            logger.warning(f"No angle parameters found for: {angle_type_key}")
+                            parameters.append(f"angle_coeff     {angle_id} harmonic 50.0 109.5    # {angle_type_key} (fallback)")
                         
-                        angle_type_map[angle_key] = angle_id
-                        angle_id += 1
+                        angle_type_map[angle_type_key] = angle_id
+                        
         
         # Generate dihedral coefficients using comprehensive database
         if "dihedrals" in topology and topology["dihedrals"]:
             parameters.append("\n# Dihedral coefficients")
             dihedral_type_map = {}
-            dihedral_id = 1
+            dihedral_type_mapping = topology_types.get('dihedral_type_mapping', {})
             
             for dihedral in topology["dihedrals"]:
                 dihedral_types = dihedral.get("types", [])
-                if len(dihedral_types) == 4:
-                    dihedral_key = tuple(dihedral_types)
-                    if dihedral_key not in dihedral_type_map:
-                        dihedral_params = forcefield_utils.get_dihedral_parameters(dihedral_key)
+                if len(dihedral_types) >= 4:
+                    # Use consistent dihedral type key generation (maintain order for dihedrals, then join as string)
+                    dihedral_type_key = "-".join(dihedral_types[:4])
+                    dihedral_id = dihedral_type_mapping.get(dihedral_type_key, 1)
+
+                    if dihedral_type_key not in dihedral_type_map:
+                        # get_dihedral_parameters expects a tuple, so convert string key back to tuple
+                        dihedral_type_tuple = tuple(dihedral_types[:4])
+                        dihedral_params = forcefield_utils.get_dihedral_parameters(dihedral_type_tuple)
                         
                         if dihedral_params and len(dihedral_params) > 0:
                             # Use the first dihedral parameter set (GAFF typically has multiple terms)
@@ -1075,14 +1186,13 @@ undump          1
                             n_terms = param.get("n_terms", 1)
                             style = param.get("style", "fourier")
                             comment = param.get("comment", "")
-                            parameters.append(f"dihedral_coeff  {dihedral_id} {style} {n_terms} {k:.3f} {n} {phase:.1f}    # {'-'.join(dihedral_key)} {comment}")
+                            parameters.append(f"dihedral_coeff  {dihedral_id} {style} {n_terms} {k:.3f} {n} {phase:.1f}    # {dihedral_type_key} {comment}")
                         else:
                             # Fallback parameters
-                            logger.warning(f"No dihedral parameters found for: {'-'.join(dihedral_key)}")
-                            parameters.append(f"dihedral_coeff  {dihedral_id} fourier 1 0.000 1 0.0    # {'-'.join(dihedral_key)} (fallback)")
+                            logger.warning(f"No dihedral parameters found for: {dihedral_type_key}")
+                            parameters.append(f"dihedral_coeff  {dihedral_id} fourier 1 0.000 1 0.0    # {dihedral_type_key} (fallback)")
                         
-                        dihedral_type_map[dihedral_key] = dihedral_id
-                        dihedral_id += 1
+                        dihedral_type_map[dihedral_type_key] = dihedral_id
         
         # Generate improper dihedral coefficients using comprehensive database
         if "impropers" in topology and topology["impropers"]:

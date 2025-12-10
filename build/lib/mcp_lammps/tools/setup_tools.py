@@ -140,8 +140,11 @@ def register_setup_tools(server: Any, lammps_server: Any) -> None:
             Simulation information
         """
         try:
-            # Create water molecule file
-            water_file = lammps_server.data_handler.create_water_molecule_file()
+            # Create water box file
+            water_file = lammps_server.data_handler.create_water_box_file(
+                num_molecules=num_molecules,
+                box_size=box_size
+            )
             
             # Create simulation configuration
             config = {

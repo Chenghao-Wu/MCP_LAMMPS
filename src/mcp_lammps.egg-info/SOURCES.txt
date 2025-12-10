@@ -12,6 +12,8 @@ src/mcp_lammps.egg-info/dependency_links.txt
 src/mcp_lammps.egg-info/entry_points.txt
 src/mcp_lammps.egg-info/requires.txt
 src/mcp_lammps.egg-info/top_level.txt
+src/mcp_lammps/parsers/__init__.py
+src/mcp_lammps/parsers/gaff_parser.py
 src/mcp_lammps/tools/__init__.py
 src/mcp_lammps/tools/analysis_tools.py
 src/mcp_lammps/tools/control_tools.py

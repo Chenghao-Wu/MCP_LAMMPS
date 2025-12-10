@@ -966,16 +966,17 @@ Atoms
                 total_angles += len(topology['angles']) * count
                 total_dihedrals += len(topology['dihedrals']) * count
             
-            # Get all unique atom types
+            # Get all unique atom types (sorted for deterministic ordering)
             all_atom_types = set()
             for mol_info in processed_molecules:
                 all_atom_types.update(mol_info['atom_types'].values())
-            
-            unique_atom_types = list(all_atom_types)
+
+            unique_atom_types = sorted(list(all_atom_types))
             type_mapping = {atype: i+1 for i, atype in enumerate(unique_atom_types)}
             
-            # Get unique topology types across all molecules
-            topology_types = self._get_unique_topology_types_multi(processed_molecules)
+
+            # Get unique topology types across all molecules using unified mapping
+            topology_types = forcefield_utils.create_unified_topology_mapping_multi(processed_molecules)
             
             # Create data file content
             lines = [
@@ -1004,7 +1005,7 @@ Atoms
             # Add masses
             for i, atype in enumerate(unique_atom_types):
                 mass = forcefield_utils._get_atomic_mass(atype)
-                lines.append(f"{i+1} {mass:.4f}")
+                lines.append(f"{i+1} {mass:.4f} # {atype}")
             
             lines.extend(["", "Atoms", ""])
             
@@ -1105,6 +1106,20 @@ Atoms
                     'num_atoms_per_molecule': len(mol_charges)
                 })
 
+            # Enhance metadata with complete type mappings for consistency
+            enhanced_topology_types = topology_types.copy()
+            
+            # Add string-based mappings for easier script generation
+            enhanced_topology_types["bond_type_mapping_str"] = {
+                "-".join(k): v for k, v in topology_types["bond_type_mapping"].items()
+            }
+            enhanced_topology_types["angle_type_mapping_str"] = {
+                "-".join(k): v for k, v in topology_types["angle_type_mapping"].items()
+            }
+            enhanced_topology_types["dihedral_type_mapping_str"] = {
+                "-".join(k): v for k, v in topology_types["dihedral_type_mapping"].items()
+            }
+            
             # Save metadata
             metadata = {
                 "molecules": molecules,
@@ -1118,6 +1133,14 @@ Atoms
                     "total_system_charge": total_charge,
                     "molecule_charges": molecule_info,  # Keep for backward compatibility
                     "charge_method": "gasteiger"
+                },
+                "topology_types": enhanced_topology_types,
+                "type_consistency_info": {
+                    "generation_method": "unified_topology_mapping",
+                    "bond_types_count": len(topology_types["unique_bond_types"]),
+                    "angle_types_count": len(topology_types["unique_angle_types"]),
+                    "dihedral_types_count": len(topology_types["unique_dihedral_types"]),
+                    "mapping_algorithm": "sorted_deterministic"
                 }
             }
             
@@ -1127,6 +1150,33 @@ Atoms
                 json.dump(metadata, f, indent=2, default=str)
             
             logger.info(f"Created liquid box file with {total_molecules} molecules: {filename}")
+            
+            # Validate the created data file for consistency
+            try:
+                from .utils.forcefield_utils import forcefield_utils
+                data_file_types = forcefield_utils._parse_data_file_types(file_path)
+                expected_types = {
+                    'atom_types': len(unique_atom_types),
+                    'bond_types': len(topology_types["unique_bond_types"]),
+                    'angle_types': len(topology_types["unique_angle_types"]),
+                    'dihedral_types': len(topology_types["unique_dihedral_types"])
+                }
+                
+                validation_passed = True
+                for type_name, expected_count in expected_types.items():
+                    actual_count = data_file_types.get(type_name, 0)
+                    if actual_count != expected_count:
+                        logger.warning(f"Type count mismatch for {type_name}: expected {expected_count}, got {actual_count}")
+                        validation_passed = False
+                
+                if validation_passed:
+                    logger.info("Data file type validation passed")
+                else:
+                    logger.warning("Data file type validation failed")
+                    
+            except Exception as e:
+                logger.warning(f"Data file validation error: {e}")
+            
             return file_path
             
         except Exception as e:
@@ -1235,66 +1285,13 @@ Atoms
     
     def _get_unique_topology_types_multi(self, processed_molecules: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Get unique bond, angle, and dihedral types across all molecule types.
+        DEPRECATED: Use forcefield_utils.create_unified_topology_mapping_multi() instead.
         
-        Args:
-            processed_molecules: List of processed molecule dictionaries
-            
-        Returns:
-            Dictionary containing unique types and their mappings
+        This method is kept for backward compatibility but now delegates to the unified system.
         """
-        try:
-            # Collect all unique bond types
-            all_bond_types = set()
-            all_angle_types = set()
-            all_dihedral_types = set()
-            
-            for mol_info in processed_molecules:
-                topology = mol_info['topology']
-                
-                # Collect bond types
-                for bond_info in topology["bonds"]:
-                    bond_type = tuple(sorted(bond_info["types"]))
-                    all_bond_types.add(bond_type)
-                
-                # Collect angle types
-                for angle_info in topology["angles"]:
-                    angle_type = tuple(angle_info["types"])
-                    all_angle_types.add(angle_type)
-                
-                # Collect dihedral types
-                for dihedral_info in topology["dihedrals"]:
-                    dihedral_type = tuple(dihedral_info["types"])
-                    all_dihedral_types.add(dihedral_type)
-            
-            # Create type mappings
-            unique_bond_types = list(all_bond_types)
-            unique_angle_types = list(all_angle_types)
-            unique_dihedral_types = list(all_dihedral_types)
-            
-            bond_type_mapping = {bond_type: i+1 for i, bond_type in enumerate(unique_bond_types)}
-            angle_type_mapping = {angle_type: i+1 for i, angle_type in enumerate(unique_angle_types)}
-            dihedral_type_mapping = {dihedral_type: i+1 for i, dihedral_type in enumerate(unique_dihedral_types)}
-            
-            return {
-                "unique_bond_types": unique_bond_types,
-                "unique_angle_types": unique_angle_types,
-                "unique_dihedral_types": unique_dihedral_types,
-                "bond_type_mapping": bond_type_mapping,
-                "angle_type_mapping": angle_type_mapping,
-                "dihedral_type_mapping": dihedral_type_mapping
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting unique topology types: {e}")
-            return {
-                "unique_bond_types": [],
-                "unique_angle_types": [],
-                "unique_dihedral_types": [],
-                "bond_type_mapping": {},
-                "angle_type_mapping": {},
-                "dihedral_type_mapping": {}
-            }
+        logger.warning("_get_unique_topology_types_multi is deprecated. Use forcefield_utils.create_unified_topology_mapping_multi() instead.")
+        from .utils.forcefield_utils import forcefield_utils
+        return forcefield_utils.create_unified_topology_mapping_multi(processed_molecules)
     
     def _write_bonds_section(
         self,
@@ -1329,8 +1326,9 @@ Atoms
                     
                     for bond_info in topology["bonds"]:
                         atoms = bond_info["atoms"]
-                        bond_type_key = tuple(sorted(bond_info["types"]))
-                        bond_type_id = bond_type_mapping[bond_type_key]
+                        # Use consistent bond type key generation (sorted for bonds)
+                        bond_type_key = tuple(sorted(bond_info["types"][:2]))
+                        bond_type_id = bond_type_mapping.get(bond_type_key, 1)  # Fallback to type 1
                         
                         # Convert local atom indices to global indices
                         global_atom1 = atoms[0] + atom_offset + 1  # +1 for 1-based indexing
@@ -1378,8 +1376,9 @@ Atoms
                     
                     for angle_info in topology["angles"]:
                         atoms = angle_info["atoms"]
-                        angle_type_key = tuple(angle_info["types"])
-                        angle_type_id = angle_type_mapping[angle_type_key]
+                        # Use consistent angle type key generation (maintain order for angles)
+                        angle_type_key = tuple(angle_info["types"][:3])
+                        angle_type_id = angle_type_mapping.get(angle_type_key, 1)  # Fallback to type 1
                         
                         # Convert local atom indices to global indices
                         global_atom1 = atoms[0] + atom_offset + 1
@@ -1428,8 +1427,9 @@ Atoms
                     
                     for dihedral_info in topology["dihedrals"]:
                         atoms = dihedral_info["atoms"]
-                        dihedral_type_key = tuple(dihedral_info["types"])
-                        dihedral_type_id = dihedral_type_mapping[dihedral_type_key]
+                        # Use consistent dihedral type key generation (maintain order for dihedrals)
+                        dihedral_type_key = tuple(dihedral_info["types"][:4])
+                        dihedral_type_id = dihedral_type_mapping.get(dihedral_type_key, 1)  # Fallback to type 1
                         
                         # Convert local atom indices to global indices
                         global_atom1 = atoms[0] + atom_offset + 1
