@@ -18,6 +18,13 @@ openbabel>=3.1.1
 MDAnalysis>=2.4.0
 pytraj>=2.0.5
 
+# OpenFF Toolkit for force field assignment
+openff-toolkit>=2.2.0
+openff-interchange>=0.3.0
+openff-units>=0.2.0
+openff-models>=0.1.2
+openff-nagl>=0.3.0
+
 # Data validation and serialization
 pydantic>=2.0.0
 

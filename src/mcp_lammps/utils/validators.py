@@ -145,14 +145,23 @@ def validate_force_field(force_field: str) -> bool:
     if not isinstance(force_field, str):
         return False
     
-    # Common LAMMPS force fields
-    valid_force_fields = [
+    # OpenFF force fields (primary)
+    openff_force_fields = [
+        "openff", "openff-sage", "openff-2.2.0", "openff-2.2.0.offxml",
+        "openff-2.2.1", "openff-2.2.1.offxml",
+        "openff_unconstrained-2.2.1.offxml", "openff-2.1.0.offxml",
+        "openff-2.0.0.offxml", "openff-parsley", "openff-1.3.1.offxml"
+    ]
+    
+    # Common LAMMPS force fields (for reference)
+    lammps_force_fields = [
         "lj/cut", "lj/cut/coul/cut", "lj/cut/coul/long", "lj/cut/coul/msm",
         "eam", "eam/alloy", "eam/fs", "eam/cd", "eam/gw", "eam/gw/zbl",
         "sw", "tersoff", "tersoff/zbl", "reax", "reax/c", "rebo", "airebo",
-        "airebo/morse", "opls", "gromos", "charmm", "amber", "dreiding",
-        "uff", "tip3p", "tip4p", "spce", "spc", "oplsaa"
+        "airebo/morse", "tip3p", "tip4p", "spce", "spc"
     ]
+    
+    valid_force_fields = openff_force_fields + lammps_force_fields
     
     return force_field.lower() in [ff.lower() for ff in valid_force_fields]
 
