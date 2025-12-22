@@ -70,7 +70,8 @@ def register_setup_tools(server: Any, lammps_server: Any) -> None:
             
             # Create LAMMPS script if structure file is provided
             if structure_file:
-                script_content = lammps_server.lammps_interface.create_basic_script(
+                # Use liquid script generator with best practice protocol
+                script_content = lammps_server.lammps_interface.create_liquid_script(
                     structure_file=structure_file,
                     force_field=force_field,
                     temperature=temperature,
@@ -163,9 +164,10 @@ def register_setup_tools(server: Any, lammps_server: Any) -> None:
             # Create simulation in manager
             simulation_id = lammps_server.simulation_manager.create_simulation(name, config)
             
-            # Create LAMMPS script
-            script_content = lammps_server.lammps_interface.create_water_script(
-                water_file=str(water_file),
+            # Create LAMMPS script using liquid script generator (water treated as liquid)
+            script_content = lammps_server.lammps_interface.create_liquid_script(
+                structure_file=str(water_file),
+                force_field="openff",
                 temperature=temperature,
                 pressure=pressure,
                 timestep=timestep,

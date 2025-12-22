@@ -43,4 +43,14 @@ flake8>=5.0.0
 mypy>=1.0.0
 
 # Optional: GPU support
-# cupy>=11.0.0  # Uncomment if CUDA support is needed 
+# cupy>=11.0.0  # Uncomment if CUDA support is needed
+
+# System-level Dependencies (must be installed separately):
+# 
+# Packmol - Molecular packing optimization tool
+#   Required for organic liquid box creation with proper molecular packing
+#   Installation:
+#     - Ubuntu/Debian: sudo apt install packmol
+#     - macOS (Homebrew): brew install packmol
+#     - From source: http://m3g.iqm.unicamp.br/packmol/
+#   Note: The Packmol binary must be in your system PATH 

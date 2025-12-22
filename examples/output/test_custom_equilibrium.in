@@ -34,6 +34,8 @@ read_data       /home/zhenghaowu/mcp_lammps/examples/output/test_system.lmp
 # Note: Force field parameters are read from the data file
 # The data file should contain all pair_coeff, bond_coeff, angle_coeff, etc.
 
+# Force field styles should be defined here
+
 
 # ============================================================================
 # SIMULATION SETTINGS

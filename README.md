@@ -74,6 +74,21 @@ This MCP is part of our workflow for the autonomous computational materials desi
 - Python 3.9 or higher
 - LAMMPS with Python interface
 - RDKit (for molecular structure processing)
+- **Packmol** (for organic liquid box creation with proper molecular packing)
+
+### System Dependencies
+
+**Packmol Installation** (Required for organic liquid simulations):
+```bash
+# Ubuntu/Debian
+sudo apt install packmol
+
+# macOS (Homebrew)
+brew install packmol
+
+# From source
+# Download from http://m3g.iqm.unicamp.br/packmol/
+```
 
 ### Optional Dependencies
 - MDAnalysis (for advanced trajectory analysis)

@@ -25,7 +25,7 @@ atom_style      full
 boundary        p p p
 
 # Read structure
-read_data       /home/zhenghaowu/mcp_lammps/examples/output/test_convenience.lmp
+read_data       examples/output/test_openff_ethanol.lmp
 
 
 # ============================================================================
@@ -34,12 +34,20 @@ read_data       /home/zhenghaowu/mcp_lammps/examples/output/test_convenience.lmp
 # Note: Force field parameters are read from the data file
 # The data file should contain all pair_coeff, bond_coeff, angle_coeff, etc.
 
-# Force field styles should be defined here
+bond_style harmonic
+angle_style harmonic
+dihedral_style fourier
+special_bonds lj 0.0 0.0 0.5 coul 0.0 0.0 0.8333333333
+pair_style lj/cut/coul/long 9.0 9.0
+pair_modify mix arithmetic tail yes
 
 
 # ============================================================================
 # SIMULATION SETTINGS
 # ============================================================================
+
+# Long-range electrostatics
+kspace_style pppm 1e-4
 
 # Neighbor list settings
 neighbor        2.0 bin
@@ -65,8 +73,8 @@ print "=========================================="
 minimize        0.0001 1e-06 10000 10000
 
 # Save minimized structure
-write_data      test_convenience_minimized.data
-write_restart   test_convenience_minimized.restart
+write_data      test_parsed_minimized.data
+write_restart   test_parsed_minimized.restart
 
 print "Minimization complete"
 print ""
@@ -107,8 +115,8 @@ unfix           nvt_heat
 unfix           vrescale
 
 # Save heated structure
-write_data      test_convenience_heated.data
-write_restart   test_convenience_heated.restart
+write_data      test_parsed_heated.data
+write_restart   test_parsed_heated.restart
 
 print "NVT heating complete"
 print ""
@@ -138,7 +146,7 @@ fix             npt_density all npt temp 300.0 300.0 100.0 iso 1.0 1.0 1000.0
 
 # Monitor density convergence
 variable        current_density equal density
-fix             density_avg all ave/time 100 10 1000 v_current_density file test_convenience_density_equilibration.dat
+fix             density_avg all ave/time 100 10 1000 v_current_density file test_parsed_density_equilibration.dat
 
 # Run density equilibration
 run             100000
@@ -148,8 +156,8 @@ unfix           npt_density
 unfix           density_avg
 
 # Save equilibrated structure
-write_data      test_convenience_equilibrated.data
-write_restart   test_convenience_equilibrated.restart
+write_data      test_parsed_equilibrated.data
+write_restart   test_parsed_equilibrated.restart
 
 print "Density equilibration complete"
 print "Final density: ${current_density} g/cm^3"
@@ -175,11 +183,11 @@ print "=========================================="
 fix             npt_prod all npt temp 300.0 300.0 100.0 iso 1.0 1.0 1000.0
 
 # Trajectory output
-dump            traj all custom 10000 test_convenience_trajectory.lammpstrj id type x y z
+dump            traj all custom 10000 test_parsed_trajectory.lammpstrj id type x y z
 dump_modify     traj sort id
 
 # Restart files for continuation
-restart         100000 test_convenience_restart.*.restart
+restart         100000 test_parsed_restart.*.restart
 
 # Enhanced thermodynamic output
 thermo          1000
@@ -193,8 +201,8 @@ unfix           npt_prod
 undump          traj
 
 # Save final structure
-write_data      test_convenience_final.data
-write_restart   test_convenience_final.restart
+write_data      test_parsed_final.data
+write_restart   test_parsed_final.restart
 
 print "Production run complete"
 print ""

@@ -78,17 +78,17 @@ def register_control_tools(server: Any, lammps_server: Any) -> None:
                         if not success:
                             raise RuntimeError("Failed to run LAMMPS script")
                     else:
-                        # Create and run basic script
+                        # Create and run liquid script with best practice protocol
                         structure_file = sim.config.get("structure_file")
                         if structure_file:
-                            script_content = lammps_server.lammps_interface.create_basic_script(
+                            script_content = lammps_server.lammps_interface.create_liquid_script(
                                 structure_file=structure_file,
-                                force_field=sim.config.get("force_field", "lj/cut"),
+                                force_field=sim.config.get("force_field", "openff"),
                                 temperature=sim.config.get("temperature", 300.0),
                                 pressure=sim.config.get("pressure", 1.0),
-                                timestep=sim.config.get("timestep", 0.001),
-                                equilibration_steps=sim.config.get("equilibration_steps", 1000),
-                                production_steps=sim.config.get("production_steps", 10000)
+                                timestep=sim.config.get("timestep", 1.0),
+                                equilibration_steps=sim.config.get("equilibration_steps", 100000),
+                                production_steps=sim.config.get("production_steps", 1000000)
                             )
                             
                             success = lammps_server.lammps_interface.run_script(lmp, script_content)
