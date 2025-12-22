@@ -1,0 +1,24 @@
+{
+  "molecules": [
+    {
+      "smiles": "CCO",
+      "count": 100,
+      "name": "ethanol"
+    }
+  ],
+  "target_density": 0.789,
+  "calculated_box_size": 21.32370404632636,
+  "total_atoms": 900,
+  "total_molecules": 100,
+  "box_type": "cubic",
+  "force_field": "openff-sage-2.2.0",
+  "charge_method": "am1bcc",
+  "interchange_info": {
+    "n_atoms": 900,
+    "n_molecules": 100,
+    "n_bonds": 800,
+    "box_vectors": "[[21.32370405  0.          0.        ]\n [ 0.         21.32370405  0.        ]\n [ 0.          0.         21.32370405]]",
+    "force_field": "openff-2.2.0.offxml",
+    "charge_model": "am1bcc"
+  }
+}
