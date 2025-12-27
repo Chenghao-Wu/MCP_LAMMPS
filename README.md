@@ -6,6 +6,9 @@ A Model Context Protocol (MCP) server that enables AI assistants to interact wit
 
 This is still in experimental status. This package is developed in collaboration with AI coder.
 
+### Update 12.26.2025
+**Tool Consolidation:** Streamlined the API by removing 14 redundant tools (29% reduction). The toolset now has 34 focused, powerful tools instead of 48. All essential functionality is preserved through consolidated tools. See [MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md) for details.
+
 ### Update 06.12.2025
 Note: all tests are performed with Sonnet 4.5
 

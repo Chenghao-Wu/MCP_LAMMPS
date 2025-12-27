@@ -692,21 +692,23 @@ class OpenFFForceField:
             box_size = self.calculate_box_size(unique_molecules, counts, target_density)
             
             # Pack molecules using Packmol
-            positions = self.generate_packmol_positions(unique_molecules, counts, box_size)
+            # rescale box size to be a multiple of 2 to make sure the box size is large enough for the molecules to be separated
+            box_size_rescaled = box_size * 2
+            positions = self.generate_packmol_positions(unique_molecules, counts, box_size_rescaled )
             
             # Create box vectors
             if box_type == 'cubic':
                 box_vectors = np.array([
-                    [box_size, 0, 0],
-                    [0, box_size, 0],
-                    [0, 0, box_size]
+                    [box_size_rescaled, 0, 0],
+                    [0, box_size_rescaled, 0],
+                    [0, 0, box_size_rescaled]
                 ]) * unit.angstrom
             else:
                 # For simplicity, use cubic for now
                 box_vectors = np.array([
-                    [box_size, 0, 0],
-                    [0, box_size, 0],
-                    [0, 0, box_size]
+                    [box_size_rescaled, 0, 0],
+                    [0, box_size_rescaled, 0],
+                    [0, 0, box_size_rescaled]
                 ]) * unit.angstrom
             
             # Create topology

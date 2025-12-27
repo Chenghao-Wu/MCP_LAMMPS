@@ -633,7 +633,9 @@ Atoms
         self,
         smiles: str,
         molecule_name: str,
-        optimize_geometry: bool = True
+        optimize_geometry: bool = True,
+        box_size: float = 20.0
+
     ) -> Path:
         """
         Import molecular structure from SMILES string using OpenFF.
@@ -642,7 +644,7 @@ Atoms
             smiles: SMILES string representation
             molecule_name: Name for the molecule
             optimize_geometry: Whether to optimize 3D geometry
-            
+            box_size: Simulation box size
         Returns:
             Path to the created structure file
         """
@@ -656,19 +658,25 @@ Atoms
             
             # Assign charges using NAGL
             openff_forcefield.assign_charges(molecule)
-            
+            from openff.units import unit
+            box_vectors = np.array([
+                [box_size, 0, 0],
+                [0, box_size, 0],
+                [0, 0, box_size]
+            ]) * unit.angstrom
+
             # Create single-molecule topology
             topology = openff_forcefield.create_topology([molecule])
             
             # Create Interchange system
             interchange = openff_forcefield.create_interchange(topology, [molecule])
             
+            interchange.box = box_vectors
             # Export to LAMMPS files
             output_prefix = self.input_dir / f"{molecule_name}_from_smiles"
             data_file, script_file = openff_forcefield.to_lammps(interchange, str(output_prefix))
             
             # Save metadata
-            from openff.units import unit
             metadata = {
                 "smiles": smiles,
                 "molecule_name": molecule_name,
@@ -843,6 +851,7 @@ Atoms
             system_info = openff_forcefield.get_system_info(interchange)
             
             box_size = system_info['box_vectors'][0][0] if system_info['box_vectors'] is not None else 0.0
+            # rescale box size to be a multiple of 2 to make sure the box size is large enough for the molecules to be separated
             
             # Save simplified metadata
             metadata = {
