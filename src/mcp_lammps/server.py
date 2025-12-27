@@ -64,6 +64,16 @@ class LAMMPSServer:
         self.simulation_manager = SimulationManager(self.work_dir)
         self.data_handler = DataHandler(self.work_dir)
         
+        # Initialize SLURM manager (optional, only if SLURM is available)
+        try:
+            from .slurm_manager import SlurmManager
+            slurm_config_file = self.work_dir / "slurm_config.yaml"
+            self.slurm_manager = SlurmManager(self.work_dir, slurm_config_file if slurm_config_file.exists() else None)
+            logger.info(f"SLURM manager initialized (available: {self.slurm_manager.is_available()})")
+        except Exception as e:
+            logger.warning(f"SLURM manager initialization failed: {e}")
+            self.slurm_manager = None
+        
         # Create MCP server
         self.server = FastMCP(
             name=name,
@@ -93,6 +103,15 @@ class LAMMPSServer:
         register_organic_tools(self.server, self)
         register_property_tools(self.server, self)
         
+        # Register SLURM tools if available
+        if self.slurm_manager:
+            try:
+                from .tools.slurm_tools import register_slurm_tools
+                register_slurm_tools(self.server, self)
+                logger.info("SLURM tools registered successfully")
+            except Exception as e:
+                logger.warning(f"Failed to register SLURM tools: {e}")
+        
         logger.info("All tools registered successfully (including organic and property tools)")
     
     async def health_check(self, ctx: Context) -> Dict[str, Any]:
@@ -114,12 +133,21 @@ class LAMMPSServer:
             print(sim_manager_status)
             # Check data handler
             data_handler_status = self.data_handler.get_status()
+            
+            # Check SLURM manager
+            slurm_status = None
+            if self.slurm_manager:
+                slurm_status = {
+                    "available": self.slurm_manager.is_available(),
+                    "version": self.slurm_manager.slurm_interface.get_version()
+                }
                         
             return {
                 "status": "healthy",
                 "lammps_interface": lammps_status,
                 "simulation_manager": sim_manager_status,
                 "data_handler": data_handler_status,
+                "slurm_manager": slurm_status,
                 "work_directory": str(self.work_dir),
                 "active_simulations": len(self.simulation_manager.get_active_simulations())
             }

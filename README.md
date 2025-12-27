@@ -6,9 +6,6 @@ A Model Context Protocol (MCP) server that enables AI assistants to interact wit
 
 This is still in experimental status. This package is developed in collaboration with AI coder.
 
-### Update 12.26.2025
-**Tool Consolidation:** Streamlined the API by removing 14 redundant tools (29% reduction). The toolset now has 34 focused, powerful tools instead of 48. All essential functionality is preserved through consolidated tools. See [MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md) for details.
-
 ### Update 06.12.2025
 Note: all tests are performed with Sonnet 4.5
 
@@ -64,6 +61,7 @@ This MCP is part of our workflow for the autonomous computational materials desi
 - **Analysis Tools**: Process trajectories and calculate thermodynamic properties (with MDAnalysis)
 - **Charge Calculation**: Gasteiger, MMFF94, and GAFF charge estimation methods
 - **Workflow Automation**: Define and execute multi-step simulation workflows
+- **SLURM Integration**: Submit and manage simulations on HPC clusters (optional)
 
 ### Supported Molecular Systems
 - Small organic molecules
@@ -97,6 +95,7 @@ brew install packmol
 - MDAnalysis (for advanced trajectory analysis)
 - OpenBabel (for additional molecular format conversion - requires system Open Babel libraries)
 - pytraj (for additional trajectory analysis - requires cpptraj)
+- SLURM (for HPC cluster job submission and management)
 
 ### Quick Start
 
@@ -141,6 +140,23 @@ export MCP_LAMMPS_LOG_LEVEL=INFO
 export MCP_LAMMPS_WORK_DIR=/path/to/workspace
 python -m mcp_lammps.server
 ```
+
+### SLURM Cluster Integration
+
+For HPC cluster environments, MCP LAMMPS supports SLURM job submission:
+
+1. Configure `slurm_config.yaml` in your workspace:
+```yaml
+global_defaults:
+  partition: "compute"
+  nodes: 1
+  ntasks_per_node: 4
+  time_limit: "24:00:00"
+```
+
+2. Submit simulations to SLURM cluster via AI commands or programmatically
+
+See [SLURM Integration Guide](docs/slurm-guide.md) for detailed instructions.
 
 ### Example Prompts
 

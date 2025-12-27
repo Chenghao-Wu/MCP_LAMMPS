@@ -75,6 +75,11 @@ class Simulation:
         # LAMMPS instance
         self.lammps_instance: Optional[Any] = None
         
+        # SLURM execution fields
+        self.execution_mode: str = "local"  # "local" or "slurm"
+        self.slurm_job_id: Optional[str] = None
+        self.slurm_status: Optional[str] = None
+        
         # Threading
         self._lock = threading.Lock()
         self._stop_event = threading.Event()
@@ -175,7 +180,10 @@ class Simulation:
                 "error_message": self.error_message,
                 "config": self.config,
                 "results": self.results,
-                "logs": self.logs[-100:]  # Keep only last 100 log entries
+                "logs": self.logs[-100:],  # Keep only last 100 log entries
+                "execution_mode": self.execution_mode,
+                "slurm_job_id": self.slurm_job_id,
+                "slurm_status": self.slurm_status
             }
     
     def save_state(self) -> None:
@@ -198,6 +206,10 @@ class Simulation:
                 self.error_message = data.get("error_message")
                 self.results = data.get("results", {})
                 self.logs = data.get("logs", [])
+                # Restore SLURM fields
+                self.execution_mode = data.get("execution_mode", "local")
+                self.slurm_job_id = data.get("slurm_job_id")
+                self.slurm_status = data.get("slurm_status")
 
 
 class SimulationManager:

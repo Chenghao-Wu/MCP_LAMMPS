@@ -1,0 +1,51 @@
+# SLURM Configuration for MCP LAMMPS
+#
+# This file configures SLURM job submission parameters.
+# Global defaults are applied to all simulations unless overridden.
+
+# Global default configuration for all SLURM jobs
+global_defaults:
+  # SLURM partition to submit jobs to
+  partition: "compute"
+  
+  # Number of compute nodes to request
+  nodes: 1
+  
+  # Number of MPI tasks per node
+  ntasks_per_node: 4
+  
+  # Time limit for jobs (format: HH:MM:SS or D-HH:MM:SS)
+  time_limit: "24:00:00"
+  
+  # Memory per CPU (use K, M, G suffixes)
+  memory_per_cpu: "4G"
+  
+  # Module load command for LAMMPS (optional)
+  # Example: "module load lammps/2023"
+  lammps_module: null
+  
+  # LAMMPS executable name or path
+  lammps_executable: "lmp"
+  
+  # MPI command template (use {ntasks} placeholder)
+  mpi_command: "mpirun -np {ntasks}"
+  
+  # Additional modules to load (list, optional)
+  additional_modules: []
+  
+  # Email notification type (NONE, BEGIN, END, FAIL, ALL)
+  mail_type: null
+  
+  # Email address for notifications
+  mail_user: null
+
+# Per-simulation configuration overrides
+# Add entries here to override global defaults for specific simulations
+per_simulation_overrides:
+  # Example:
+  # "my_simulation_id":
+  #   nodes: 2
+  #   ntasks_per_node: 8
+  #   time_limit: "48:00:00"
+  #   partition: "gpu"
+
